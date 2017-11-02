@@ -31,7 +31,7 @@ by DOC or the United States Government.*
   See: https://help.github.com/articles/connecting-to-github-with-ssh/
 
 ### Usage:
-    ghorgsync  orgname  localdir
+    ghorgsync.py  orgname  localdir
 #### where:
     orgname   is the GitHub organization name (e.g., NOAA-PMEL)  
     localdir  is the full-path of the directory containing a 'private'
