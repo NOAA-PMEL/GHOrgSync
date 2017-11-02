@@ -23,12 +23,12 @@ by DOC or the United States Government.*
   is added to the requests for repository information using this value as the personal access 
   token.  If successful, information about both private and public repositories will be obtained.
   If the `GITUSERTOKEN` environment variable is not given or its value is blank, only information 
-  about public repositories will be obtained.  See:  
-  https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
+  about public repositories will be obtained.  
+  See: https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
 
 - Uses SSH URLs (i.e., git@github.com/...) to clone the repositories.  In order to clone private 
-  repositories, the current user's GitHub account must be configured with the user's SSH key.  See:  
-  https://help.github.com/articles/connecting-to-github-with-ssh/
+  repositories, the current user's GitHub account must be configured with the user's SSH key.  
+  See: https://help.github.com/articles/connecting-to-github-with-ssh/
 
 ### Usage:
     ghorgsync  orgname  localdir
