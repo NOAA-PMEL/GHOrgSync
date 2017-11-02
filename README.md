@@ -1,7 +1,7 @@
 ## GHOrgSync
 Python script to clone and update (pull) repositories at a GitHub organization site to local 
 repository directories.  Connects to GitHub as the current user.  Private repositories can 
-be seen and cloned and updated if appropriate conditions are met.
+be seen, cloned, and updated if appropriate conditions are met.
 
 #### Legal disclaimer:
 *This repository is a software product and is not official communication 
@@ -21,9 +21,9 @@ by DOC or the United States Government.*
 ### To see private repositories:
 - If the environment variable `GITUSERTOKEN` is given and its value is not blank, authentication 
   is added to the requests for repository information using this value as the personal access 
-  token.  If successful, information about both private and public repositories will be obtained.
-  If the `GITUSERTOKEN` environment variable is not given or its value is blank, only information 
-  about public repositories will be obtained.  
+  token for the current user.  If successful, information about both private and public repositories 
+  (that the current user can see) will be obtained.  If the `GITUSERTOKEN` environment variable 
+  is not given or its value is blank, only information about public repositories will be obtained.  
   See: https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
 
 - Uses SSH URLs (i.e., git@github.com/...) to clone the repositories.  In order to clone private 
