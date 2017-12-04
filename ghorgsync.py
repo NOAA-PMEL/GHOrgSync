@@ -130,6 +130,7 @@ class GHOrgSync(object):
                 atend = False
                 name = str(repo[u'name'])
                 private = bool(repo[u'private'])
+                haswiki = bool(repo[u'has_wiki'])
                 sshurl = str(repo[u'ssh_url'])
                 match = urlregex.match(sshurl)
                 if match and (match.group(1) == name):
@@ -146,6 +147,7 @@ class GHOrgSync(object):
                         parenturl = ''
                     repos.append({'name': name, 
                                   'private': private, 
+                                  'haswiki': haswiki, 
                                   'sshurl': sshurl, 
                                   'parenturl': parenturl})
                 else:
@@ -232,6 +234,47 @@ class GHOrgSync(object):
             print('{ts} :: not a directory: {dname}'.format(
                    ts=timestamp, dname=clonedir), file=sys.stderr)
             return False
+        # Deal with the wiki of this repo, if there is one.
+        if repo['haswiki']:
+            # Assumes wiki name is repo name with '.wiki' appended
+            wikiname = name + '.wiki'
+            wikidir = os.path.join(basedir, wikiname)
+            if not os.path.exists(wikidir):
+                wikiurl = sshurl[:-4] + '.wiki.git'
+                # New wiki - clone it
+                # Unfortunately, has_wiki only means a wiki is allowed and 
+                # does not mean there actually is any content.  If no content, 
+                # an error message and error value is returned.
+                os.chdir(basedir)
+                devnull = open('/dev/null', 'w')
+                try:
+                    retval = subprocess.call(['git', 'clone', '--quiet', wikiurl], stderr=devnull)
+                finally:
+                    devnull.close()
+                # Ignore the error value
+            elif os.path.isdir(wikidir):
+                # Verify it is a git repo
+                dotgit = os.path.join(wikidir, '.git')
+                if os.path.isdir(dotgit):
+                    # Existing local clone - update it (pull)
+                    os.chdir(wikidir)
+                    retval = subprocess.call(['git', 'pull', '--quiet'])
+                    if retval != 0:
+                        timestamp = datetime.today().isoformat(' ')
+                        print('{ts} :: cannot update (pull) wiki {wname}'.format(
+                               ts=timestamp, wname=wikiname), file=sys.stderr)
+                        return False
+                else:
+                    timestamp = datetime.today().isoformat(' ')
+                    print('{ts} :: not a git repository: {dname}'.format(
+                           ts=timestamp, dname=wikidir), file=sys.stderr)
+                    return False
+            else:
+                # Not a directory
+                timestamp = datetime.today().isoformat(' ')
+                print('{ts} :: not a directory: {dname}'.format(
+                       ts=timestamp, dname=wikidir), file=sys.stderr)
+                return False
         return True
 
 
