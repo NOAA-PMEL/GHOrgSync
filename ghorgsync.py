@@ -100,8 +100,10 @@ class GHOrgSync(object):
         Each entry is the list returned is a dictionary with key-value pairs: 
             'name'      : (str) repository name; e.g., PyFerret
             'private'   : (bool) is this a private repository?
-            'sshurl'    : (str) SSH URL of the repository; e.g., 
-                                git@github.com:NOAA-PMEL/PyFerret.git
+            'cloneurl'  : (str) clone URL of the repository; e.g.,
+                                git@github.com:NOAA-PMEL/PyFerret.git or
+                                git://github.com:NOAA-PMEL/PyFerret.get for
+                                public repos
             'parenturl' : (str) SSH URL of the parent GitHub repository, or
                                 an empty string if this repository is not
                                 a fork of another GitHub repository
@@ -131,8 +133,8 @@ class GHOrgSync(object):
                 name = str(repo[u'name'])
                 private = bool(repo[u'private'])
                 haswiki = bool(repo[u'has_wiki'])
-                sshurl = str(repo[u'ssh_url'])
-                match = urlregex.match(sshurl)
+                cloneurl = str(repo[u'ssh_url'])
+                match = urlregex.match(cloneurl)
                 if match and (match.group(1) == name):
                     if bool(repo[u'fork']):
                         inforeq = urllib2.Request('https://api.github.com/repos/{org}/{rname}'.format(
@@ -145,10 +147,13 @@ class GHOrgSync(object):
                         parenturl = str(repoinfo[u'parent'][u'ssh_url'])
                     else:
                         parenturl = ''
+                    if not private:
+                        # fix clone URL for public repos (use Git protocol)
+                        cloneurl = str(repo[u'git_url'])
                     repos.append({'name': name, 
                                   'private': private, 
                                   'haswiki': haswiki, 
-                                  'sshurl': sshurl, 
+                                  'cloneurl': cloneurl,
                                   'parenturl': parenturl})
                 else:
                     timestamp = datetime.today().isoformat(' ')
@@ -157,7 +162,7 @@ class GHOrgSync(object):
                     else:
                         explanation = 'mismatch'
                     print('{ts} :: repo ignored ({expl}) {rname} : {url}'.format(
-                          ts=timestamp, expl=explanation, rname=name, url=sshurl), file=sys.stderr)
+                          ts=timestamp, expl=explanation, rname=name, url=cloneurl), file=sys.stderr)
             if atend:
                 pagenum = 0
             else:
@@ -173,8 +178,10 @@ class GHOrgSync(object):
             repo : (dict) repository information dictionary with key-value pairs: 
                 'name'      : (str) repository name; e.g., PyFerret
                 'private'   : (bool) is this a private repository?
-                'sshurl'    : (str) SSH URL of the repository; e.g., 
-                                    git@github.com:NOAA-PMEL/PyFerret.git
+                'cloneurl'  : (str) clone URL of the repository; e.g., 
+                                    git@github.com:NOAA-PMEL/PyFerret.git or
+                                    git://github.com:NOAA-PMEL/PyFerret.get for
+                                    public repos
                 'parenturl' : (str) SSH URL of the parent GitHub repository to set 
                                     as the upstream repository when creating the 
                                     local clone.  If empty or None, or if the local 
@@ -184,7 +191,7 @@ class GHOrgSync(object):
         # Get the info about the repo
         name = repo['name']
         private = repo['private']
-        sshurl = repo['sshurl']
+        cloneurl = repo['cloneurl']
         parenturl = repo['parenturl']
         # Get the local clone location for this repo
         if private:
@@ -196,11 +203,11 @@ class GHOrgSync(object):
         if not os.path.exists(clonedir):
             # New repo - clone it
             os.chdir(basedir)
-            retval = subprocess.call(['git', 'clone', '--quiet', sshurl])
+            retval = subprocess.call(['git', 'clone', '--quiet', cloneurl])
             if retval != 0:
                 timestamp = datetime.today().isoformat(' ')
                 print('{ts} :: cannot clone repository {rname} : {url}'.format(
-                       ts=timestamp, rname=name, url=sshurl), file=sys.stderr)
+                       ts=timestamp, rname=name, url=cloneurl), file=sys.stderr)
                 return False
             if parenturl:
                 # Fork - record its upstream
@@ -240,7 +247,7 @@ class GHOrgSync(object):
             wikiname = name + '.wiki'
             wikidir = os.path.join(basedir, wikiname)
             if not os.path.exists(wikidir):
-                wikiurl = sshurl[:-4] + '.wiki.git'
+                wikiurl = cloneurl[:-4] + '.wiki.git'
                 # New wiki - clone it
                 # Unfortunately, has_wiki only means a wiki is allowed and 
                 # does not mean there actually is any content.  If no content, 
