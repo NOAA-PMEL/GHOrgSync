@@ -102,6 +102,8 @@ class GHOrgSync(object):
             'private'   : (bool) is this a private repository?
             'sshurl'    : (str) SSH URL of the repository; e.g., 
                                 git@github.com:NOAA-PMEL/PyFerret.git
+            'giturl'    : (str) git URL of the repository; e.g.,
+                                git://github.com/NOAA-PMEL/PyFerret.git
             'parenturl' : (str) SSH URL of the parent GitHub repository, or
                                 an empty string if this repository is not
                                 a fork of another GitHub repository
@@ -132,6 +134,7 @@ class GHOrgSync(object):
                 private = bool(repo[u'private'])
                 haswiki = bool(repo[u'has_wiki'])
                 sshurl = str(repo[u'ssh_url'])
+                giturl = str(repo[u'git_url'])
                 match = urlregex.match(sshurl)
                 if match and (match.group(1) == name):
                     if bool(repo[u'fork']):
@@ -148,7 +151,8 @@ class GHOrgSync(object):
                     repos.append({'name': name, 
                                   'private': private, 
                                   'haswiki': haswiki, 
-                                  'sshurl': sshurl, 
+                                  'sshurl': sshurl,
+                                  'giturl': giturl,
                                   'parenturl': parenturl})
                 else:
                     timestamp = datetime.today().isoformat(' ')
@@ -175,6 +179,8 @@ class GHOrgSync(object):
                 'private'   : (bool) is this a private repository?
                 'sshurl'    : (str) SSH URL of the repository; e.g., 
                                     git@github.com:NOAA-PMEL/PyFerret.git
+                'giturl'    : (str) git URL of the repository; e.g.,
+                                git://github.com/NOAA-PMEL/PyFerret.git
                 'parenturl' : (str) SSH URL of the parent GitHub repository to set 
                                     as the upstream repository when creating the 
                                     local clone.  If empty or None, or if the local 
@@ -185,6 +191,7 @@ class GHOrgSync(object):
         name = repo['name']
         private = repo['private']
         sshurl = repo['sshurl']
+        giturl = repo['giturl']
         parenturl = repo['parenturl']
         # Get the local clone location for this repo
         if private:
@@ -194,13 +201,17 @@ class GHOrgSync(object):
         clonedir = os.path.join(basedir, name)
         # Deal with this repo
         if not os.path.exists(clonedir):
+            cloneurl = sshurl
+            if not private:
+                # use Git protocol for public repos, per GitHub docs
+                cloneurl = giturl
             # New repo - clone it
             os.chdir(basedir)
-            retval = subprocess.call(['git', 'clone', '--quiet', sshurl])
+            retval = subprocess.call(['git', 'clone', '--quiet', cloneurl])
             if retval != 0:
                 timestamp = datetime.today().isoformat(' ')
                 print('{ts} :: cannot clone repository {rname} : {url}'.format(
-                       ts=timestamp, rname=name, url=sshurl), file=sys.stderr)
+                       ts=timestamp, rname=name, url=cloneurl), file=sys.stderr)
                 return False
             if parenturl:
                 # Fork - record its upstream
